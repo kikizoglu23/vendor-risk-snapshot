@@ -111,7 +111,7 @@ export const ransomwareCheck: CheckDefinition = {
   weight: 35,
   sources: [{ name: "ransomware.live", url: "https://www.ransomware.live" }],
   limitations:
-    "Covers victims that gangs publicly name; paid-ransom cases are never listed. Name-only matches are flagged as 'possible' and need manual verification.",
+    "A listing is the attacker's claim, not a confirmed breach — some groups post exaggerated or recycled data, especially about large brands, so ask the vendor before concluding. Covers only victims that gangs publicly name (paid-ransom cases are never listed). Name-only matches are flagged as 'possible' and need manual verification.",
 
   async run(domain) {
     const brand = brandLabel(domain);

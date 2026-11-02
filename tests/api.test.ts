@@ -16,7 +16,14 @@ const NX = "this-domain-does-not-exist-vrs-test.com";
 
 async function get(path: string) {
   const res = await fetch(BASE + path);
-  return { status: res.status, cache: res.headers.get("cache-control") ?? "", type: res.headers.get("content-type") ?? "", body: await res.json() };
+  return {
+    status: res.status,
+    cache: res.headers.get("cache-control") ?? "",
+    /** Set only on Vercel: HIT / MISS / STALE from its CDN cache. */
+    vercelCache: res.headers.get("x-vercel-cache"),
+    type: res.headers.get("content-type") ?? "",
+    body: await res.json(),
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,11 +71,18 @@ describe("GET /api/checks/{id} — every check, every input class", () => {
   for (const id of IDS) {
     describe(id, () => {
       it("returns a valid, cacheable result for a real domain", async () => {
-        const { status, body, cache } = await get(`/api/checks/${id}?domain=adobe.com`);
+        const path = `/api/checks/${id}?domain=adobe.com`;
+        const { status, body, cache, vercelCache } = await get(path);
         expect(status).toBe(200);
         expectValidResult(body, id, "adobe.com");
         expect(body.status).not.toBe("error");
-        expect(cache).toContain("s-maxage=3600");
+        if (vercelCache === null) {
+          expect(cache).toContain("s-maxage=3600"); // local server: header is passed through
+        } else {
+          // Vercel's CDN consumes s-maxage, so prove caching by asking twice
+          const again = await get(path);
+          expect(["HIT", "STALE"]).toContain(again.vercelCache);
+        }
       });
 
       it("normalises messy input (URL, uppercase, www, path, email)", async () => {
