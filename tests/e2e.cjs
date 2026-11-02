@@ -243,6 +243,8 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
   });
 
   await test("exploited CVEs link to SOCRadar CVE Radar", async () => {
+    await page.goto(`${APP}/?d=skyplan.com`);
+    await waitForResults(page);
     const links = page.locator('a:text-is("SOCRadar CVE Radar →")');
     assert.ok((await links.count()) >= 1);
     assert.match(await links.first().getAttribute("href"), /^https:\/\/socradar\.io\/free-tools\/cve-radar\/CVE-\d{4}-\d+$/);
