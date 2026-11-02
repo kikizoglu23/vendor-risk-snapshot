@@ -1,7 +1,7 @@
 import Scanner from "@/components/Scanner";
 import { ShieldIcon } from "@/components/ui";
 import { checkMeta } from "@/lib/checks/registry";
-import { SITE } from "@/lib/config";
+import { ctaHref, SITE } from "@/lib/config";
 import { CRITICAL_CAP } from "@/lib/scoring";
 
 export default function Home() {
@@ -49,7 +49,7 @@ export default function Home() {
             New leaks, new exploited CVEs and new ransomware listings appear daily. Continuous third-party monitoring alerts
             you the moment one of your suppliers is affected.
           </p>
-          <a href={SITE.ctaUrl} target="_blank" rel="noreferrer" className="mt-4 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200">
+          <a href={ctaHref("homepage")} target="_blank" rel="noreferrer" className="mt-4 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200">
             Explore continuous monitoring →
           </a>
         </section>

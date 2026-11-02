@@ -211,7 +211,35 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
     assert.match(email, /^Subject: Security follow-up — skyplan\.com\n/);
     assert.match(email, /\n1\. The ransomware group "thegentlemen" listed your organisation/);
     assert.match(email, /Evidence: https:\/\/www\.ransomware\.live\//);
+    const link = email.match(/is here:\n(\S+)/)[1];
+    const u = new URL(link);
+    assert.equal(u.origin, new URL(APP).origin);
+    assert.equal(u.searchParams.get("d"), "skyplan.com");
+    assert.equal(u.searchParams.get("utm_source"), "vendor-email");
     fs.writeFileSync(path.join(OUT, "email-draft.txt"), email);
+  });
+
+  await test("the vendor opening that link sees its own report and a monitoring CTA", async () => {
+    await page.goto(`${APP}/?d=skyplan.com&utm_source=vendor-email&utm_medium=email&utm_campaign=vendor-questionnaire`);
+    const banner = page.locator('aside[aria-label="Vendor notice"]');
+    await banner.waitFor();
+    assert.match(await banner.innerText(), /A customer reviewed skyplan\.com/);
+    const cta = new URL(await banner.locator("a").getAttribute("href"));
+    assert.equal(cta.searchParams.get("utm_campaign"), "vendor-loop");
+    assert.equal(cta.searchParams.get("utm_source"), "vendor-risk-snapshot");
+    await waitForResults(page);
+    assert.equal(await rowButtons(page).count(), 1);
+    const params = new URL(page.url()).searchParams;
+    assert.equal(params.get("d"), "skyplan.com");
+    assert.equal([...params.keys()].some((k) => k.startsWith("utm_")), false, "campaign tags are stripped from share links");
+    await page.screenshot({ path: path.join(OUT, "07-vendor-visit.png") });
+  });
+
+  await test("a normal visit shows no vendor notice, and the homepage CTA is tagged", async () => {
+    await page.goto(`${APP}/?d=skyplan.com`);
+    assert.equal(await page.locator('aside[aria-label="Vendor notice"]').count(), 0);
+    const cta = new URL(await page.locator('a:text-is("Explore continuous monitoring →")').getAttribute("href"));
+    assert.equal(cta.searchParams.get("utm_campaign"), "homepage");
   });
 
   await test("exploited CVEs link to SOCRadar CVE Radar", async () => {

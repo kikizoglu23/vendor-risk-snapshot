@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CheckMeta, CheckResult, FollowUp, Priority } from "@/lib/checks/types";
-import { SITE } from "@/lib/config";
+import { ctaHref, reportLink, SITE, VENDOR_EMAIL_SOURCE } from "@/lib/config";
 import { normalizeDomain } from "@/lib/domain";
 import { collectFollowUps, emailDraft } from "@/lib/questionnaire";
 import { CRITICAL_CAP, overallScore } from "@/lib/scoring";
@@ -43,6 +43,8 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const runId = useRef(0);
+  /** Set when a vendor arrives through the link in a customer's email. */
+  const [vendorVisit, setVendorVisit] = useState<string | null>(null);
 
   /** Runs the given (domain, check) pairs and writes each result as it arrives. */
   const execute = useCallback(
@@ -117,7 +119,13 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
 
   // Shareable links: /?d=acme.com,vendor.io runs immediately.
   useEffect(() => {
-    const d = new URLSearchParams(window.location.search).get("d");
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get("d");
+    if (d && params.get("utm_source") === VENDOR_EMAIL_SOURCE) setVendorVisit(normalizeDomain(d.split(",")[0]));
+    // Keep share links clean: campaign tags are read once, then dropped from the address bar.
+    const clean = new URL(window.location.href);
+    for (const k of [...clean.searchParams.keys()]) if (k.startsWith("utm_")) clean.searchParams.delete(k);
+    window.history.replaceState(null, "", clean);
     if (d) {
       const text = d.split(",").join("\n");
       setInput(text);
@@ -171,6 +179,26 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
 
   return (
     <div>
+      {vendorVisit && (
+        <aside
+          aria-label="Vendor notice"
+          className="mb-6 rounded-2xl border border-sky-400/30 bg-sky-500/10 p-5 print:hidden"
+        >
+          <h2 className="text-lg font-semibold text-white">A customer reviewed {vendorVisit}&apos;s public security posture</h2>
+          <p className="mt-1 max-w-3xl text-sm text-slate-300">
+            Below is exactly what they see, with the evidence behind each item. Customers check vendors before signing and
+            after every incident. Catch these findings before they do.
+          </p>
+          <a
+            href={ctaHref("vendor-loop")}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200"
+          >
+            Monitor {vendorVisit} continuously →
+          </a>
+        </aside>
+      )}
       {/* Input */}
       <form
         className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/30 sm:p-5 print:hidden"
@@ -406,7 +434,7 @@ const PRIORITY_STYLE: Record<Priority, string> = {
 function FollowUpPanel({ domain, followUps }: { domain: string; followUps: FollowUp[] }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    await navigator.clipboard.writeText(emailDraft(domain, followUps));
+    await navigator.clipboard.writeText(emailDraft(domain, followUps, { reportUrl: reportLink(window.location.origin, domain) }));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

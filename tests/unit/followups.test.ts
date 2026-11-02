@@ -8,6 +8,7 @@ import { emailSecurityCheck } from "@/lib/checks/email-security";
 import { exposedServicesCheck } from "@/lib/checks/exposed-services";
 import { ransomwareCheck } from "@/lib/checks/ransomware";
 import type { CheckOutcome, CheckResult, FollowUp } from "@/lib/checks/types";
+import { ctaHref, reportLink, VENDOR_EMAIL_SOURCE } from "@/lib/config";
 import { collectFollowUps, emailDraft } from "@/lib/questionnaire";
 
 const outcome = (data: Record<string, unknown>): CheckOutcome => ({ status: "fail", score: 0, summary: "", findings: [], data });
@@ -134,12 +135,41 @@ describe("questionnaire", () => {
         { priority: "critical", question: "Q1?", evidence: "https://example.org/e1" },
         { priority: "high", question: "Q2?" },
       ],
-      new Date("2026-11-01T12:00:00Z"),
+      { now: new Date("2026-11-01T12:00:00Z") },
     );
     expect(text.split("\n")[0]).toBe("Subject: Security follow-up — acme.com");
     expect(text).toContain("on 1 November 2026");
     expect(text).toContain("1. Q1?\n   Evidence: https://example.org/e1");
     expect(text).toContain("2. Q2?");
     expect(text).toContain("by 11 November 2026");
+    expect(text).not.toContain("full report");
+  });
+
+  it("adds the vendor's report link when given, before the deadline line", () => {
+    const url = reportLink("https://vendor-risk-snapshot.vercel.app", "acme.com");
+    const text = emailDraft("acme.com", [{ priority: "high", question: "Q?" }], { now: new Date("2026-11-01T12:00:00Z"), reportUrl: url });
+    expect(text).toContain(`The full report, with the public evidence behind each item, is here:\n${url}\n\nWe would appreciate`);
+  });
+});
+
+describe("links", () => {
+  it("report link opens the vendor's own report and tags the referral loop", () => {
+    const u = new URL(reportLink("https://vendor-risk-snapshot.vercel.app", "acme.com"));
+    expect(u.origin + u.pathname).toBe("https://vendor-risk-snapshot.vercel.app/");
+    expect(Object.fromEntries(u.searchParams)).toEqual({
+      d: "acme.com",
+      utm_source: VENDOR_EMAIL_SOURCE,
+      utm_medium: "email",
+      utm_campaign: "vendor-questionnaire",
+    });
+  });
+
+  it("CTA links carry UTM tags per campaign", () => {
+    for (const campaign of ["homepage", "vendor-loop"] as const) {
+      const u = new URL(ctaHref(campaign));
+      expect(u.searchParams.get("utm_source")).toBe("vendor-risk-snapshot");
+      expect(u.searchParams.get("utm_medium")).toBe("referral");
+      expect(u.searchParams.get("utm_campaign")).toBe(campaign);
+    }
   });
 });

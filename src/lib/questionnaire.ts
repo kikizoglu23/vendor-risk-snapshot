@@ -23,7 +23,11 @@ function addDays(date: Date, days: number): string {
 }
 
 /** Plain-text email the user can copy into their mail client. */
-export function emailDraft(domain: string, followUps: FollowUp[], now = new Date()): string {
+export function emailDraft(
+  domain: string,
+  followUps: FollowUp[],
+  { now = new Date(), reportUrl }: { now?: Date; reportUrl?: string } = {},
+): string {
   const checkedOn = now.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const questions = followUps
     .map((f, i) => `${i + 1}. ${f.question}${f.evidence ? `\n   Evidence: ${f.evidence}` : ""}`)
@@ -37,6 +41,7 @@ export function emailDraft(domain: string, followUps: FollowUp[], now = new Date
     "",
     questions,
     "",
+    ...(reportUrl ? [`The full report, with the public evidence behind each item, is here:\n${reportUrl}`, ""] : []),
     `We would appreciate a written response by ${addDays(now, 10)}. If any finding is inaccurate or already resolved, please let us know — public sources can lag behind remediation.`,
     "",
     "Thank you,",

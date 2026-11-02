@@ -60,6 +60,14 @@ They appear in the UI ("Copy as email"), the PDF, the CSV and `/api/scan`.
 
 Exploited CVEs also link to their page on SOCRadar CVE Radar for deeper investigation.
 
+## Referral loop and attribution
+
+The email draft includes a link to the vendor's own report (`?d=vendor.com&utm_source=vendor-email…`).
+A vendor arriving through it sees what its customer saw, plus a "monitor continuously" CTA.
+All CTAs carry UTM tags (`utm_source=vendor-risk-snapshot`, campaign `homepage` or `vendor-loop`)
+so sign-ups can be attributed to the tool and the channel. Tags are stripped from the address bar
+after load, so share links stay clean.
+
 ## Resilience
 
 - **Error isolation** — each check runs in its own request with a 25 s timeout; a failing
@@ -83,9 +91,9 @@ section and the overall score all pick it up automatically.
 ## Tests
 
 ```bash
-npm test                                         # 102 unit tests (matching, scoring, SPF/DMARC, runner, questions)
+npm test                                         # 105 unit tests (matching, scoring, SPF/DMARC, runner, questions, links)
 API_BASE=http://localhost:3000 npm run test:api  # 30 API tests against live data sources
-APP_URL=http://localhost:3000 npm run test:e2e   # 25 browser tests (Playwright)
+APP_URL=http://localhost:3000 npm run test:e2e   # 27 browser tests (Playwright)
 ```
 
 ## Run locally
