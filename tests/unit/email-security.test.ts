@@ -13,7 +13,7 @@ describe("scoreSpf (max 40)", () => {
     [["google-site-verification=abc", "MS=ms123"], 0], // TXT records but no SPF
     [["v=spf1 -all", "v=spf1 ~all"], 10], // two SPF records are invalid
     [["V=SPF1 -ALL"], 40], // case-insensitive
-  ])("%j → %i", (records, points) => {
+  ])("%j -> %i", (records, points) => {
     expect(scoreSpf(records).points).toBe(points);
   });
 });
@@ -29,7 +29,7 @@ describe("scoreDmarc (max 60)", () => {
     [[], 0],
     [["some-other-txt"], 0],
     [["V=DMARC1; P=REJECT"], 60],
-  ])("%j → %i", (records, points) => {
+  ])("%j -> %i", (records, points) => {
     expect(scoreDmarc(records).points).toBe(points);
   });
 

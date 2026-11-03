@@ -35,6 +35,6 @@ describe("runCheck", () => {
     const run = vi.fn();
     const res = await runCheck(fakeCheck(run), "this-domain-does-not-exist-vrs-test.com");
     expect(run).not.toHaveBeenCalled();
-    expect(res).toMatchObject({ status: "error", score: null, summary: "This domain does not exist — check the spelling." });
+    expect(res).toMatchObject({ status: "error", score: null, summary: "This domain does not exist. Check the spelling." });
   });
 });

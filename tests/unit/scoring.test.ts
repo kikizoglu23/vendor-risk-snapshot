@@ -26,7 +26,7 @@ function r(checkId: string, score: number | null, findings: Finding[] = []): Che
 describe("gradeFor", () => {
   it.each([
     [100, "A"], [90, "A"], [89, "B"], [75, "B"], [74, "C"], [60, "C"], [59, "D"], [40, "D"], [39, "F"], [0, "F"],
-  ])("%i → %s", (score, grade) => {
+  ])("%i -> %s", (score, grade) => {
     expect(gradeFor(score)).toBe(grade);
   });
 });
@@ -38,7 +38,7 @@ describe("overallScore", () => {
   });
 
   it("leaves errored checks out instead of counting them as zero", () => {
-    // (100*50 + 50*30) / 80 = 81.25 → 81
+    // (100*50 + 50*30) / 80 = 81.25 -> 81
     expect(overallScore([r("a", 100), r("b", 50), r("c", null)], checks)).toMatchObject({ score: 81, grade: "B", scoredChecks: 2 });
   });
 

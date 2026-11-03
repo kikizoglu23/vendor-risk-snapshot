@@ -1,9 +1,9 @@
 /**
- * CHECK 2 — Publicly disclosed data breaches
+ * CHECK 2, Publicly disclosed data breaches
  *
  * Have I Been Pwned (HIBP) keeps a verified catalogue of data breaches.
  * The /breaches?domain= endpoint is free, needs no API key, and returns
- * breaches OF the given website (e.g. adobe.com → the 2013 Adobe breach).
+ * breaches OF the given website (e.g. adobe.com -> the 2013 Adobe breach).
  * It does not expose any individual's email or password.
  */
 import { fetchJson } from "../http";
@@ -34,7 +34,7 @@ export const breachesCheck: CheckDefinition = {
   weight: 20,
   sources: [{ name: "Have I Been Pwned", url: "https://haveibeenpwned.com/PwnedWebsites" }],
   limitations:
-    "Only includes breaches whose data was leaked and verified by HIBP. Breaches that were disclosed but never leaked are not listed.",
+    "Only breaches whose data was leaked and verified by HIBP are listed.",
 
   async run(domain) {
     const breaches = await fetchJson<HibpBreach[]>(`${API}?domain=${encodeURIComponent(domain)}`);
@@ -45,8 +45,8 @@ export const breachesCheck: CheckDefinition = {
       const recent = Date.now() - Date.parse(b.BreachDate) < 2 * YEAR;
       return {
         severity: recent ? "high" : sensitive.length ? "medium" : "low",
-        title: `${b.Title} breach — ${b.BreachDate} (${b.PwnCount.toLocaleString("en-US")} accounts)`,
-        detail: `Exposed: ${b.DataClasses.join(", ")}${b.IsVerified ? "" : " · Unverified breach"}`,
+        title: `${b.Title} breach on ${b.BreachDate} (${b.PwnCount.toLocaleString("en-US")} accounts)`,
+        detail: `Exposed: ${b.DataClasses.join(", ")}.${b.IsVerified ? "" : " Unverified breach."}`,
         link: `https://haveibeenpwned.com/PwnedWebsites#${b.Name}`,
       };
     });

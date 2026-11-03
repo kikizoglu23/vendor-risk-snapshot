@@ -1,4 +1,4 @@
-/** GET /api/checks — lists every available check and its metadata. */
+/** GET /api/checks, lists every available check and its metadata. */
 import { NextResponse } from "next/server";
 import { checkMeta } from "@/lib/checks/registry";
 

@@ -1,5 +1,5 @@
 /**
- * CHECK 4 — Internet-exposed services & exploited vulnerabilities
+ * CHECK 4, Internet-exposed services & exploited vulnerabilities
  *
  * 1. Resolve the vendor's domain (and www.) to IP addresses via DNS.
  * 2. Look each IP up in Shodan InternetDB (free, no key): open ports and
@@ -65,7 +65,7 @@ export const exposedServicesCheck: CheckDefinition = {
     { name: "FIRST EPSS", url: "https://www.first.org/epss/" },
   ],
   limitations:
-    "Only checks the main website IPs (domain and www), not every server the vendor owns. CVEs are inferred from software versions Shodan observed and may be false positives if the vendor backported a patch. Sites behind a CDN show the CDN's edge, not the origin server.",
+    "Only the main website's servers are checked, and CVEs inferred from software versions can be false positives.",
 
   async run(domain) {
     const [apex, www] = await Promise.all([resolve(domain, "A"), resolve(`www.${domain}`, "A")]);
@@ -96,7 +96,7 @@ export const exposedServicesCheck: CheckDefinition = {
       const k = kev.get(c)!;
       findings.push({
         severity: "critical",
-        title: `${c} — on CISA's Known Exploited list`,
+        title: `${c} is on CISA's Known Exploited list`,
         detail: `${k.vulnerabilityName} (${k.vendorProject} ${k.product}). Added ${k.dateAdded}.${k.knownRansomwareCampaignUse === "Known" ? " Used in ransomware campaigns." : ""}${epss.has(c) ? ` EPSS ${(epss.get(c)! * 100).toFixed(1)}%.` : ""}`,
         link: `https://nvd.nist.gov/vuln/detail/${c}`,
         related: { label: "SOCRadar CVE Radar", url: `https://socradar.io/free-tools/cve-radar/${c}` },
@@ -105,7 +105,7 @@ export const exposedServicesCheck: CheckDefinition = {
     for (const c of highEpss) {
       findings.push({
         severity: "high",
-        title: `${c} — ${(epss.get(c)! * 100).toFixed(1)}% chance of exploitation in 30 days (EPSS)`,
+        title: `${c}: ${(epss.get(c)! * 100).toFixed(1)}% chance of exploitation in the next 30 days (EPSS)`,
         link: `https://nvd.nist.gov/vuln/detail/${c}`,
         related: { label: "SOCRadar CVE Radar", url: `https://socradar.io/free-tools/cve-radar/${c}` },
       });
@@ -113,7 +113,7 @@ export const exposedServicesCheck: CheckDefinition = {
     for (const p of riskyOpen) {
       findings.push({
         severity: "high",
-        title: `Port ${p} open — ${RISKY_PORTS[p]}`,
+        title: `Port ${p} is open (${RISKY_PORTS[p]})`,
         detail: "This service is rarely meant to be reachable from the internet.",
       });
     }
@@ -127,9 +127,9 @@ export const exposedServicesCheck: CheckDefinition = {
     findings.push({
       severity: "info",
       title: `Checked ${ips.length} IP(s); open ports: ${ports.length ? ports.join(", ") : "none indexed"}`,
-      detail: [ips.join(", "), behindCdn && "Site is behind a CDN — results reflect the CDN edge, not the origin server."]
+      detail: [ips.join(", "), behindCdn && "Site is behind a CDN, so results reflect the CDN edge, not the origin server."]
         .filter(Boolean)
-        .join(" · "),
+        .join(". "),
     });
 
     // Start at 100, deduct per problem, never below 0.

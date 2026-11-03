@@ -67,7 +67,7 @@ describe("GET /api/checks", () => {
   });
 });
 
-describe("GET /api/checks/{id} — every check, every input class", () => {
+describe("GET /api/checks/{id}, every check, every input class", () => {
   for (const id of IDS) {
     describe(id, () => {
       it("returns a valid, cacheable result for a real domain", async () => {

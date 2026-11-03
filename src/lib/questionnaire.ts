@@ -33,7 +33,7 @@ export function emailDraft(
     .map((f, i) => `${i + 1}. ${f.question}${f.evidence ? `\n   Evidence: ${f.evidence}` : ""}`)
     .join("\n\n");
   return [
-    `Subject: Security follow-up — ${domain}`,
+    `Subject: Security follow-up for ${domain}`,
     "",
     "Hello,",
     "",
@@ -42,7 +42,7 @@ export function emailDraft(
     questions,
     "",
     ...(reportUrl ? [`The full report, with the public evidence behind each item, is here:\n${reportUrl}`, ""] : []),
-    `We would appreciate a written response by ${addDays(now, 10)}. If any finding is inaccurate or already resolved, please let us know — public sources can lag behind remediation.`,
+    `We would appreciate a written response by ${addDays(now, 10)}. If any finding is inaccurate or already resolved, please let us know. Public sources can lag behind remediation.`,
     "",
     "Thank you,",
   ].join("\n");

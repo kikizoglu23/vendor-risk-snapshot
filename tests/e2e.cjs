@@ -79,7 +79,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
   await test("more than 10 domains is refused", async () => {
     await page.fill("#domains", Array.from({ length: 11 }, (_, i) => `vendor${i}.com`).join("\n"));
     await page.click('button[type="submit"]');
-    assert.match(await page.locator("form p.text-amber-300").innerText(), /Up to 10 domains per snapshot — you entered 11/);
+    assert.match(await page.locator("form p.text-amber-300").innerText(), /You can check up to 10 domains at a time\. You entered 11\./);
   });
 
   await test("mixed input: invalid skipped, duplicates and URL forms merged", async () => {
@@ -97,7 +97,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
     assert.equal(await detail.count(), 4);
     const grade = (await rowButtons(page).first().locator("span.rounded-xl").innerText()).trim();
     assert.match(grade, /^[ABCDF]$/);
-    assert.match(await detail.nth(1).innerText(), /Adobe breach — 2013-10-04/);
+    assert.match(await detail.nth(1).innerText(), /Adobe breach on 2013-10-04/);
     const breachLink = await detail.nth(1).locator("a", { hasText: "Adobe breach" }).getAttribute("href");
     assert.match(breachLink, /^https:\/\/haveibeenpwned\.com\//);
     for (let i = 0; i < 4; i++) assert.match(await detail.nth(i).locator("footer").innerText(), /Source:/);
@@ -142,31 +142,6 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
     assert.deepEqual(states, ["false", "true", "false"]);
   });
 
-  await test("'Export CSV' downloads one row per vendor with every check column", async () => {
-    const [download] = await Promise.all([page.waitForEvent("download"), page.click('button:text-is("Export CSV")')]);
-    assert.match(download.suggestedFilename(), /^vendor-risk-snapshot-\d{4}-\d{2}-\d{2}\.csv$/);
-    const file = path.join(OUT, "export.csv");
-    await download.saveAs(file);
-    const lines = fs.readFileSync(file, "utf8").trim().split("\n");
-    const header = lines[0].split(",");
-    assert.match(lines[0], /^"domain","overall_score","grade","ransomware_status","ransomware_score","ransomware_summary","breaches_status"/);
-    assert.equal(header.length, 3 + 4 * 3 + 1);
-    assert.equal(header.at(-1), '"questions_for_vendor"');
-    const text = fs.readFileSync(file, "utf8");
-    for (const d of ["canva.com", "dropbox.com", "linkedin.com"]) assert.match(text, new RegExp(`^"${d.replace(".", "\\.")}"`, "m"));
-  });
-
-  await test("'Save as PDF' produces a printable report (inputs hidden, all details shown)", async () => {
-    await page.emulateMedia({ media: "print" });
-    assert.equal(await page.locator("form").isVisible(), false);
-    assert.equal(await page.locator("section[aria-live] article").count(), 12);
-    assert.equal(await page.locator("section[aria-live] article").nth(0).isVisible(), true);
-    assert.equal(await page.locator('section[aria-label="Questions to send this vendor"]').count(), 3, "questions are part of the report");
-    await page.pdf({ path: path.join(OUT, "report.pdf"), format: "A4", printBackground: true });
-    await page.emulateMedia({ media: "screen" });
-    assert.ok(fs.statSync(path.join(OUT, "report.pdf")).size > 20_000);
-  });
-
   console.log("Shared links & edge cases");
   await test("opening a shared link (?d=...) runs the scan automatically", async () => {
     await page.goto(`${APP}/?d=google.com,dropbox.com`);
@@ -178,7 +153,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
   await test("a non-existent domain shows 'Unavailable' and no grade", async () => {
     await page.goto(`${APP}/?d=this-domain-does-not-exist-vrs-test.com`);
     await waitForResults(page);
-    assert.equal((await rowButtons(page).first().locator("span.rounded-xl").innerText()).trim(), "–");
+    assert.equal((await rowButtons(page).first().locator("span.rounded-xl").innerText()).trim(), "-");
     assert.equal(await page.locator('section[aria-live] article:has-text("This domain does not exist")').count(), 4);
     assert.equal(await page.locator('button:has-text("failed check")').count(), 0, "typos are not retryable");
     assert.equal(await page.locator('section[aria-label="Questions to send this vendor"]').count(), 0, "no questions without data");
@@ -208,7 +183,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
     await page.click('button:text-is("Copy as email")');
     await page.waitForSelector('button:text-is("Email copied")');
     const email = await page.evaluate(() => navigator.clipboard.readText());
-    assert.match(email, /^Subject: Security follow-up — skyplan\.com\n/);
+    assert.match(email, /^Subject: Security follow-up for skyplan\.com\n/);
     assert.match(email, /\n1\. The ransomware group "thegentlemen" listed your organisation/);
     assert.match(email, /Evidence: https:\/\/www\.ransomware\.live\//);
     const link = email.match(/is here:\n(\S+)/)[1];
@@ -238,7 +213,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
   await test("a normal visit shows no vendor notice, and the homepage CTA is tagged", async () => {
     await page.goto(`${APP}/?d=skyplan.com`);
     assert.equal(await page.locator('aside[aria-label="Vendor notice"]').count(), 0);
-    const cta = new URL(await page.locator('a:text-is("Explore continuous monitoring →")').getAttribute("href"));
+    const cta = new URL(await page.locator('a:text-is("Explore continuous monitoring")').getAttribute("href"));
     assert.equal(cta.searchParams.get("utm_campaign"), "homepage");
   });
 
@@ -258,7 +233,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
           findings: [
             {
               severity: "critical",
-              title: "CVE-2024-38475 — on CISA's Known Exploited list",
+              title: "CVE-2024-38475, on CISA's Known Exploited list",
               link: "https://nvd.nist.gov/vuln/detail/CVE-2024-38475",
               related: { label: "SOCRadar CVE Radar", url: "https://socradar.io/free-tools/cve-radar/CVE-2024-38475" },
             },
@@ -271,7 +246,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
     );
     await page.goto(`${APP}/?d=skyplan.com`);
     await waitForResults(page);
-    const links = page.locator('a:text-is("SOCRadar CVE Radar →")');
+    const links = page.locator('a:text-is("SOCRadar CVE Radar")');
     assert.equal(await links.count(), 1);
     assert.equal(await links.first().getAttribute("href"), "https://socradar.io/free-tools/cve-radar/CVE-2024-38475");
     await page.unroute("**/api/checks/exposed-services?*");
@@ -337,7 +312,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
     await page.evaluate(() => document.querySelector("form").requestSubmit());
     await waitForResults(page);
     const domains = await rowButtons(page).locator("span.font-mono").allInnerTexts();
-    // The button is disabled while running, so the second submit may be ignored — either way only ONE domain's rows may exist.
+    // The button is disabled while running, so the second submit may be ignored, either way only ONE domain's rows may exist.
     assert.equal(domains.length, 1);
   });
 

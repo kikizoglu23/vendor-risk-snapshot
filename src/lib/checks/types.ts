@@ -4,7 +4,7 @@
  * A "check" is a self-contained module that answers ONE question about a
  * vendor's domain (e.g. "Has this vendor been listed on a ransomware leak
  * site?"). To add a new check: create a file in this folder that exports a
- * `CheckDefinition`, then add it to `registry.ts`. Nothing else changes —
+ * `CheckDefinition`, then add it to `registry.ts`. Nothing else changes -
  * the API endpoint, the UI and the overall score pick it up automatically.
  */
 
@@ -39,7 +39,7 @@ export interface SourceRef {
 /** What a check's `run` function returns. */
 export interface CheckOutcome {
   status: CheckStatus;
-  /** 0 (worst) – 100 (best). `null` when the check could not produce a score. */
+  /** 0 (worst) to 100 (best). `null` when the check could not produce a score. */
   score: number | null;
   /** One-sentence, human-readable verdict. */
   summary: string;

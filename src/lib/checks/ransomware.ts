@@ -1,5 +1,5 @@
 /**
- * CHECK 1 — Ransomware leak-site listings
+ * CHECK 1, Ransomware leak-site listings
  *
  * Ransomware gangs publish the names of victims who refuse to pay on their
  * "leak sites". ransomware.live scrapes those sites and offers a free API.
@@ -7,7 +7,7 @@
  * Matching logic (to avoid false positives):
  *  - CONFIRMED: the listing's website/domain field contains the vendor's domain.
  *  - POSSIBLE:  the victim name equals the vendor's brand name (e.g. "acme"),
- *               but no domain is recorded → needs a human to verify.
+ *               but no domain is recorded -> needs a human to verify.
  *  Anything else that merely contains the keyword is ignored.
  */
 import { cached } from "../cache";
@@ -59,7 +59,7 @@ const LEGAL_SUFFIXES = new Set([
   "gmbh", "ag", "sa", "sas", "srl", "spa", "bv", "nv", "plc", "pty", "as", "aş", "oy", "ab",
 ]);
 
-/** "ACME Inc." → "acme", "AT&T" → "att", "Acme Holding GmbH" → "acmeholding". */
+/** "ACME Inc." -> "acme", "AT&T" -> "att", "Acme Holding GmbH" -> "acmeholding". */
 export function companyKey(name: string): string {
   const words = name.toLowerCase().replace(/\./g, "").replace(/[^a-z0-9ş\s]/g, " ").split(/\s+/).filter(Boolean);
   while (words.length > 1 && LEGAL_SUFFIXES.has(words.at(-1)!)) words.pop();
@@ -76,7 +76,7 @@ export function toListing(v: RawVictim, domain: string, brand: string): Listing 
   // A listing can name several organisations: "verveba.com \ www.att.com", "a.com, b.com".
   // "/" is deliberately NOT a separator: "linkedin.com/company/x" is a profile page, not LinkedIn.
   const tokens = lowerName.split(/\s*(?:\\|,|;|\||&|\s)\s*/).map(clean).filter(Boolean);
-  // "acme.com" or "acme.com (Acme Corp)" — but not "acme.com.tr" or "acme.com/company/x"
+  // "acme.com" or "acme.com (Acme Corp)", but not "acme.com.tr" or "acme.com/company/x"
   const isVendor = new RegExp(`^(?:[a-z0-9-]+\\.)*${domain.replace(/[.]/g, "\\.")}(?![a-z0-9.\\-/])`);
   const nameIsDomain = tokens.some((t) => isVendor.test(t));
   let match: Listing["match"] | null = null;
@@ -115,11 +115,11 @@ export const ransomwareCheck: CheckDefinition = {
   shortName: "Ransomware",
   question: "Has this vendor been listed as a victim on a ransomware leak site?",
   whyItMatters:
-    "A listing means attackers claim they stole the vendor's data. If you share data with this vendor, your data may be in that leak — and the vendor may still be recovering.",
+    "A listing means attackers claim they stole the vendor's data. If you share data with this vendor, your data may be in that leak, and the vendor may still be recovering.",
   weight: 35,
   sources: [{ name: "ransomware.live", url: "https://www.ransomware.live" }],
   limitations:
-    "A listing is the attacker's claim, not a confirmed breach — some groups post exaggerated or recycled data, especially about large brands, so ask the vendor before concluding. Covers only victims that gangs publicly name (paid-ransom cases are never listed). Name-only matches are flagged as 'possible' and need manual verification.",
+    "A listing is the attacker's claim, not a confirmed breach, and victims who paid are never listed.",
 
   async run(domain) {
     const brand = brandLabel(domain);
@@ -154,12 +154,12 @@ export const ransomwareCheck: CheckDefinition = {
         `Victim name: "${l.name}"`,
         l.sector && `Sector: ${l.sector}`,
         l.country && `Country: ${l.country}`,
-        l.match === "possible" && "Matched on company name only — verify it is the same organisation.",
+        l.match === "possible" && "Matched on company name only. Verify it is the same organisation",
         l.alsoNamed?.length &&
-          `Also named in this listing: ${l.alsoNamed.join(", ")} — possibly an incident at a supplier or partner involving this vendor's data`,
+          `Also named in this listing: ${l.alsoNamed.join(", ")}. This may be an incident at a supplier or partner involving this vendor's data`,
       ]
         .filter(Boolean)
-        .join(" · "),
+        .join(". "),
       link: l.link,
     }));
 
@@ -187,7 +187,7 @@ export const ransomwareCheck: CheckDefinition = {
       return {
         status: "warn",
         score: 70,
-        summary: `${possible.length} possible listing(s) matched on company name only — needs manual verification.`,
+        summary: `${possible.length} possible listing(s) matched on company name only. Needs manual verification.`,
         findings,
         data,
       };

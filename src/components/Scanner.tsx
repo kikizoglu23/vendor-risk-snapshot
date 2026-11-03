@@ -92,7 +92,7 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
         return;
       }
       if (domains.length > SITE.maxDomains) {
-        setError(`Up to ${SITE.maxDomains} domains per snapshot — you entered ${domains.length}.`);
+        setError(`You can check up to ${SITE.maxDomains} domains at a time. You entered ${domains.length}.`);
         return;
       }
       setError(invalid.length ? `Skipped invalid entries: ${invalid.join(", ")}` : null);
@@ -107,7 +107,7 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
     [checks, execute],
   );
 
-  /** Re-runs only checks whose data source failed (not typos — those won't fix themselves). */
+  /** Re-runs only checks whose data source failed (not typos, those won't fix themselves). */
   const retryable = order.flatMap((domain) =>
     checks
       .filter((c) => {
@@ -143,34 +143,6 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
     [order, results, checks],
   );
 
-  const exportCsv = () => {
-    const header = [
-      "domain",
-      "overall_score",
-      "grade",
-      ...checks.flatMap((c) => [`${c.id}_status`, `${c.id}_score`, `${c.id}_summary`]),
-      "questions_for_vendor",
-    ];
-    const lines = rows.map((r) => [
-      r.domain,
-      r.overall.score ?? "",
-      r.overall.grade ?? "",
-      ...checks.flatMap((c) => {
-        const cell = r.cells[c.id];
-        return cell && cell !== "loading" ? [cell.status, cell.score ?? "", cell.summary] : ["", "", ""];
-      }),
-      collectFollowUps(r.done)
-        .map((f, i) => `${i + 1}. [${f.priority}] ${f.question}`)
-        .join("\n"),
-    ]);
-    const csv = [header, ...lines].map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = `vendor-risk-snapshot-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
     setCopied(true);
@@ -195,7 +167,7 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
             rel="noreferrer"
             className="mt-3 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200"
           >
-            Monitor {vendorVisit} continuously →
+            Monitor {vendorVisit} continuously
           </a>
         </aside>
       )}
@@ -208,7 +180,7 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
         }}
       >
         <label htmlFor="domains" className="mb-2 block text-sm font-medium text-slate-300">
-          Vendor domains <span className="font-normal text-slate-500">— up to {SITE.maxDomains}, one per line or comma-separated</span>
+          Vendor domains <span className="font-normal text-slate-500">(up to {SITE.maxDomains}, one per line or separated by commas)</span>
         </label>
         <textarea
           id="domains"
@@ -241,7 +213,7 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
           >
             Try an example
           </button>
-          <span className="ml-auto text-xs text-slate-500">Passive · no signup · nothing is stored</span>
+          <span className="ml-auto text-xs text-slate-500">Passive check, no signup, nothing is stored</span>
         </div>
         {error && <p className="mt-3 text-sm text-amber-300">{error}</p>}
       </form>
@@ -251,7 +223,7 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
         <section className="mt-8" aria-live="polite">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <h2 className="mr-auto text-lg font-semibold text-slate-100 print:text-slate-900">
-              Snapshot · {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              Snapshot of {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
             </h2>
             <div className="flex flex-wrap gap-2 print:hidden">
               {!running && retryable.length > 0 && (
@@ -260,8 +232,6 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
                 </ToolbarButton>
               )}
               <ToolbarButton onClick={copyLink}>{copied ? "Link copied" : "Copy share link"}</ToolbarButton>
-              <ToolbarButton onClick={exportCsv} disabled={running}>Export CSV</ToolbarButton>
-              <ToolbarButton onClick={() => window.print()} disabled={running}>Save as PDF</ToolbarButton>
             </div>
           </div>
 
@@ -296,7 +266,7 @@ export default function Scanner({ checks }: { checks: CheckMeta[] }) {
                     <span className="flex items-center gap-2">
                       <GradeBadge grade={row.complete ? row.overall.grade : null} />
                       <span className="text-sm tabular-nums text-slate-300 print:text-slate-700">
-                        {row.complete ? (row.overall.score ?? "–") : "…"}
+                        {row.complete ? (row.overall.score ?? "-") : "…"}
                         {row.complete && row.overall.score !== null && <span className="text-slate-500">/100</span>}
                       </span>
                     </span>
@@ -390,7 +360,7 @@ function VendorDetail({
                             {f.detail && <p className="break-words font-mono text-xs text-slate-500">{f.detail}</p>}
                             {f.related && (
                               <a href={f.related.url} target="_blank" rel="noreferrer" className="text-xs text-sky-400 hover:text-sky-300 print:hidden">
-                                {f.related.label} →
+                                {f.related.label}
                               </a>
                             )}
                           </div>
@@ -505,7 +475,7 @@ function GoDeeper({ domain }: { domain: string }) {
             data-tool={l.id}
             className="rounded-xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-sky-400/40 hover:bg-white/[0.04]"
           >
-            <span className="text-sm font-medium text-sky-300">{l.label} →</span>
+            <span className="text-sm font-medium text-sky-300">{l.label}</span>
             <span className="mt-0.5 block text-xs text-slate-400">{l.adds}</span>
           </a>
         ))}

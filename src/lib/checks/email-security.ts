@@ -1,12 +1,12 @@
 /**
- * CHECK 3 — Email spoofing protection (SPF + DMARC)
+ * CHECK 3, Email spoofing protection (SPF + DMARC)
  *
  * SPF  = a DNS record listing which servers may send email for the domain.
  * DMARC = a DNS record telling receivers what to do with email that fails
  *         those checks: nothing (p=none), spam folder (quarantine) or block (reject).
  *
  * Without them, anyone can send email that looks like it came from the
- * vendor — the classic setup for invoice fraud against the vendor's customers.
+ * vendor, the classic setup for invoice fraud against the vendor's customers.
  *
  * Score = SPF (max 40) + DMARC (max 60).
  */
@@ -56,7 +56,7 @@ export function scoreDmarc(records: string[]): { points: number; finding: Findin
       points: partial ? 40 : 50,
       finding: {
         severity: partial ? "medium" : "low",
-        title: `DMARC: ${policy}${partial ? ` applied to only ${pct}% of email` : " — spoofed email goes to spam"}`,
+        title: `DMARC: ${policy}${partial ? ` applied to only ${pct}% of email` : ", so spoofed email goes to spam"}`,
         detail: dmarc,
       },
     };
@@ -77,7 +77,7 @@ export const emailSecurityCheck: CheckDefinition = {
     { name: "Google Public DNS", url: "https://developers.google.com/speed/public-dns/docs/doh" },
   ],
   limitations:
-    "Checks the published DNS policy, not whether the vendor's mail servers actually enforce it. DKIM is not checked because its record name (selector) is not public.",
+    "Checks the published DNS policy, not how strictly the vendor's mail servers enforce it.",
 
   async run(domain) {
     const [txt, dmarcTxt] = await Promise.all([resolve(domain, "TXT"), resolve(`_dmarc.${domain}`, "TXT")]);

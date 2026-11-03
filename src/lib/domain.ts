@@ -25,8 +25,8 @@ export function normalizeDomain(input: string): string | null {
 const SECOND_LEVEL = new Set(["co", "com", "net", "org", "gov", "edu", "ac", "gen", "biz", "info"]);
 
 /**
- * The organisation's "brand" label: acme.com → acme, acme.com.tr → acme,
- * shop.acme.co.uk → acme. Used for name-based searches.
+ * The organisation's "brand" label: acme.com -> acme, acme.com.tr -> acme,
+ * shop.acme.co.uk -> acme. Used for name-based searches.
  */
 export function brandLabel(domain: string): string {
   const parts = domain.split(".");

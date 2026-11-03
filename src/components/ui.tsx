@@ -34,7 +34,7 @@ export function GradeBadge({ grade, size = "md" }: { grade: Grade | null; size?:
         grade ? GRADE_STYLE[grade] : "bg-slate-700 text-slate-400"
       }`}
     >
-      {grade ?? "–"}
+      {grade ?? "-"}
     </span>
   );
 }

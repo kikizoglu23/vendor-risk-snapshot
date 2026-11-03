@@ -65,12 +65,12 @@ describe("companyKey", () => {
     ["Acme Holding GmbH", "acmeholding"],
     ["Acme A.Ş.", "acme"],
     ["Inc", "inc"], // never strips the whole name
-  ])("%s → %s", (input, expected) => {
+  ])("%s -> %s", (input, expected) => {
     expect(companyKey(input)).toBe(expected);
   });
 });
 
-describe("toListing — more false-positive guards", () => {
+describe("toListing, more false-positive guards", () => {
   it("ignores a victim NAME that is a path on the vendor's platform", () => {
     expect(toListing({ victim: "linkedin.com/company/x", domain: "" }, "linkedin.com", "linkedin")).toBeNull();
   });

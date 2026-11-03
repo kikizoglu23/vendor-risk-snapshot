@@ -23,7 +23,7 @@ export function getCheck(id: string): CheckDefinition | undefined {
   return checks.find((c) => c.id === id);
 }
 
-/** Everything except the `run` function — safe to send to the browser. */
+/** Everything except the `run` function, safe to send to the browser. */
 export function checkMeta(): CheckMeta[] {
   return checks.map(({ id, name, shortName, question, whyItMatters, weight, sources, limitations }) => ({
     id,

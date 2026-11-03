@@ -1,5 +1,5 @@
 /**
- * FIRST EPSS (Exploit Prediction Scoring System): the probability (0–1)
+ * FIRST EPSS (Exploit Prediction Scoring System): the probability (0-1)
  * that a CVE will be exploited in the next 30 days.
  */
 import { fetchJson } from "../http";

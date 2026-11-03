@@ -32,7 +32,7 @@ export async function runCheck(check: CheckDefinition, domain: string, timeoutMs
         ...meta,
         status: "error",
         score: null,
-        summary: "This domain does not exist — check the spelling.",
+        summary: "This domain does not exist. Check the spelling.",
         findings: [],
         followUps: [],
         durationMs: Date.now() - started,

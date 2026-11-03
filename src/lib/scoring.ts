@@ -5,7 +5,7 @@
  *    Checks that errored are left out instead of counting as zero.
  * 2. Critical-finding cap: if any check reports a CRITICAL finding (e.g. a
  *    ransomware listing in the last 12 months, or a CISA KEV vulnerability),
- *    the overall score cannot exceed 49 — a perfect email setup must not
+ *    the overall score cannot exceed 49, so a perfect email setup cannot
  *    hide an active compromise.
  * 3. Grade: A ≥ 90, B ≥ 75, C ≥ 60, D ≥ 40, F below.
  */

@@ -11,7 +11,7 @@ describe("normalizeDomain", () => {
     ["acme.com.", "acme.com"],
     ["shop.acme.co.uk", "shop.acme.co.uk"],
     ["münchen.de", "xn--mnchen-3ya.de"],
-  ])("%s → %s", (input, expected) => {
+  ])("%s -> %s", (input, expected) => {
     expect(normalizeDomain(input)).toBe(expected);
   });
 
@@ -30,7 +30,7 @@ describe("brandLabel", () => {
     ["acme.co.uk", "acme"],
     ["shop.acme.com.tr", "acme"],
     ["acme.io", "acme"],
-  ])("%s → %s", (input, expected) => {
+  ])("%s -> %s", (input, expected) => {
     expect(brandLabel(input)).toBe(expected);
   });
 });
