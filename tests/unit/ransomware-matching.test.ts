@@ -3,7 +3,7 @@
  * responses (including the false-positive cases found during testing).
  */
 import { describe, expect, it } from "vitest";
-import { companyKey, toListing } from "@/lib/checks/ransomware";
+import { companyKey, ransomwareCheck, toListing } from "@/lib/checks/ransomware";
 
 const base = { group: "testgroup", attackdate: "2026-10-06T19:26:11+00:00", url: "https://www.ransomware.live/id/abc" };
 
@@ -76,5 +76,35 @@ describe("toListing — more false-positive guards", () => {
   });
   it("does not confirm a different TLD (acme.com.tr is not acme.com)", () => {
     expect(toListing({ victim: "acme.com.tr", domain: "" }, "acme.com", "acme")).toBeNull();
+  });
+});
+
+describe("listings that name several organisations (supplier / partner incidents)", () => {
+  // Real ransomware.live record, Oct 2026: "verveba.com \ www.att.com", domain field empty
+  const multi = { victim: "verveba.com \\ www.att.com", domain: "", group: "incransom", attackdate: "2026-10-15" };
+
+  it("matches the vendor anywhere in a multi-domain victim name", () => {
+    expect(toListing(multi, "att.com", "att")).toMatchObject({ match: "confirmed", alsoNamed: ["verveba.com"] });
+    expect(toListing(multi, "verveba.com", "verveba")).toMatchObject({ match: "confirmed", alsoNamed: ["att.com"] });
+    expect(toListing({ victim: "a-corp.com, b-corp.com & acme.com", domain: "" }, "acme.com", "acme")?.alsoNamed).toEqual(["a-corp.com", "b-corp.com"]);
+  });
+
+  it("still ignores look-alikes and profile paths inside multi-domain names", () => {
+    expect(toListing({ victim: "verveba.com \\ www.hyatt.com", domain: "" }, "att.com", "att")).toBeNull();
+    expect(toListing({ victim: "x.com, linkedin.com/company/x", domain: "" }, "linkedin.com", "linkedin")).toBeNull();
+  });
+
+  it("flags another organisation named in a SOCRadar record (company differs from the domain)", () => {
+    const l = toListing({ victim: "verveba.com", domain: "att.com", group: "INC Ransom" }, "att.com", "att", "SOCRadar");
+    expect(l).toMatchObject({ match: "confirmed", alsoNamed: ["verveba.com"] });
+  });
+
+  it("asks the vendor whether the other organisation is its supplier", () => {
+    const listing = { ...toListing(multi, "att.com", "att")!, date: new Date(Date.now() - 86_400_000).toISOString().slice(0, 10) };
+    const qs = ransomwareCheck.followUps!({ status: "fail", score: 0, summary: "", findings: [], data: { listings: [listing] } }, "att.com");
+    const q = qs.find((x) => x.question.includes("also names"));
+    expect(q).toMatchObject({ priority: "high" });
+    expect(q?.question).toContain("verveba.com");
+    expect(q?.question).toContain("suppliers or partners");
   });
 });

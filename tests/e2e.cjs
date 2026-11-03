@@ -243,11 +243,63 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
   });
 
   await test("exploited CVEs link to SOCRadar CVE Radar", async () => {
+    // Live CVE data changes when vendors patch (skyplan.com upgraded Apache on 2 Nov 2026),
+    // so this UI test uses a fixed exposed-services response.
+    await page.route("**/api/checks/exposed-services?*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          checkId: "exposed-services",
+          domain: "skyplan.com",
+          status: "fail",
+          score: 25,
+          summary: "1 known-exploited vulnerability(ies) (CISA KEV) on public servers.",
+          findings: [
+            {
+              severity: "critical",
+              title: "CVE-2024-38475 — on CISA's Known Exploited list",
+              link: "https://nvd.nist.gov/vuln/detail/CVE-2024-38475",
+              related: { label: "SOCRadar CVE Radar", url: "https://socradar.io/free-tools/cve-radar/CVE-2024-38475" },
+            },
+          ],
+          followUps: [],
+          durationMs: 1,
+          checkedAt: new Date().toISOString(),
+        }),
+      }),
+    );
     await page.goto(`${APP}/?d=skyplan.com`);
     await waitForResults(page);
     const links = page.locator('a:text-is("SOCRadar CVE Radar →")');
-    assert.ok((await links.count()) >= 1);
-    assert.match(await links.first().getAttribute("href"), /^https:\/\/socradar\.io\/free-tools\/cve-radar\/CVE-\d{4}-\d+$/);
+    assert.equal(await links.count(), 1);
+    assert.equal(await links.first().getAttribute("href"), "https://socradar.io/free-tools/cve-radar/CVE-2024-38475");
+    await page.unroute("**/api/checks/exposed-services?*");
+  });
+
+  await test("ransomware finding shows both sources and links to SOCRadar's victim page", async () => {
+    await page.goto(`${APP}/?d=skyplan.com`);
+    await waitForResults(page);
+    const card = page.locator("section[aria-live] article").first();
+    assert.match(await card.innerText(), /Seen by 2 independent sources \(ransomware\.live, SOCRadar\)/);
+    const link = card.locator('a:text-is("SOCRadar Ransomware Intelligence →")');
+    assert.match(await link.getAttribute("href"), /^https:\/\/socradar\.io\/free-tools\/ransomware-intelligence\/victims\/skyplan/);
+  });
+
+  await test("'Go deeper' hands the vendor to SOCRadar's protected tools in a new tab", async () => {
+    const section = page.locator('section[aria-label="Go deeper with SOCRadar"]');
+    assert.ok(await section.isVisible());
+    const links = section.locator("a[data-tool]");
+    assert.equal(await links.count(), 2);
+    for (const tool of ["dark-web-report", "external-attack-surface"]) {
+      const a = section.locator(`a[data-tool="${tool}"]`);
+      const u = new URL(await a.getAttribute("href"));
+      assert.equal(u.origin + u.pathname, `https://socradar.io/free-tools/${tool}`);
+      assert.equal(u.searchParams.get("domain"), "skyplan.com");
+      assert.equal(u.searchParams.get("utm_source"), "vendor-risk-snapshot");
+      assert.equal(await a.getAttribute("target"), "_blank");
+    }
+    await page.screenshot({ path: path.join(OUT, "08-two-sources-go-deeper.png"), fullPage: true });
   });
 
   await test("a vendor with nothing to clarify gets a 'no questions' message, not an empty list", async () => {

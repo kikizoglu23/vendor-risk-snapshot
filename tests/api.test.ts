@@ -7,6 +7,7 @@
  * that previously produced a false positive, and confirmed 2026 victims.
  */
 import { describe, expect, it } from "vitest";
+import { groupKey } from "@/lib/checks/ransomware";
 
 const BASE = process.env.API_BASE ?? "http://localhost:3000";
 const IDS = ["ransomware", "breaches", "exposed-services", "email-security"];
@@ -181,12 +182,32 @@ describe("ground truth with live data", () => {
     expect(names.some((n) => n.includes("SAGAM"))).toBe(false);
   });
 
-  it("ransomware: a confirmed 2026 victim is flagged critical with an evidence link", async () => {
+  it("ransomware: a confirmed 2026 victim is flagged critical, corroborated by both sources", async () => {
     const { body } = await get("/api/checks/ransomware?domain=skyplan.com");
     expect(body.status).toBe("fail");
     expect(body.score).toBe(0);
     expect(body.findings[0].severity).toBe("critical");
     expect(body.findings[0].link).toMatch(/^https:\/\/www\.ransomware\.live\//);
+    expect(body.data.sourceStatus).toEqual({ "ransomware.live": "ok", SOCRadar: "ok" });
+    expect(body.data.listings[0].sources.map((s: { source: string }) => s.source)).toEqual(["ransomware.live", "SOCRadar"]);
+    expect(body.findings[0].detail).toContain("Seen by 2 independent sources");
+    expect(body.findings[0].related.url).toMatch(/^https:\/\/socradar\.io\/free-tools\/ransomware-intelligence\/victims\//);
+    expect(body.summary).toContain("seen by 2 sources");
+  });
+
+  it("ransomware: a listing that also names another organisation is flagged as a possible supplier incident (att.com)", async () => {
+    const { body } = await get("/api/checks/ransomware?domain=att.com");
+    const inc = body.data.listings.find((l: { group: string }) => groupKey(l.group) === "incransom");
+    expect(inc).toBeDefined();
+    expect(inc.sources.map((s: { source: string }) => s.source).sort()).toEqual(["SOCRadar", "ransomware.live"]);
+    expect(inc.alsoNamed).toContain("verveba.com");
+    expect(body.followUps.some((q: { question: string }) => q.question.includes("also names verveba.com"))).toBe(true);
+  });
+
+  it("ransomware: SOCRadar's fuzzy hits never become findings (linkedin.com)", async () => {
+    const { body } = await get("/api/checks/ransomware?domain=linkedin.com");
+    expect(body.data.listings).toEqual([]);
+    expect(body.status).toBe("pass");
   });
 
   it("scoring: a recent ransomware victim can never score above the critical cap", async () => {

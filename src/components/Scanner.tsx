@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CheckMeta, CheckResult, FollowUp, Priority } from "@/lib/checks/types";
-import { ctaHref, reportLink, SITE, VENDOR_EMAIL_SOURCE } from "@/lib/config";
+import { ctaHref, reportLink, SITE, socradarToolLinks, VENDOR_EMAIL_SOURCE } from "@/lib/config";
 import { normalizeDomain } from "@/lib/domain";
 import { collectFollowUps, emailDraft } from "@/lib/questionnaire";
 import { CRITICAL_CAP, overallScore } from "@/lib/scoring";
@@ -419,6 +419,7 @@ function VendorDetail({
         })}
       </div>
       {row.complete && row.overall.score !== null && <FollowUpPanel domain={row.domain} followUps={collectFollowUps(row.done)} />}
+      {row.complete && row.overall.score !== null && <GoDeeper domain={row.domain} />}
     </div>
   );
 }
@@ -484,6 +485,31 @@ function FollowUpPanel({ domain, followUps }: { domain: string; followUps: Follo
           Nothing in public sources needs clarification from this vendor. Standard due diligence (contract terms, certifications, questionnaire) still applies.
         </p>
       )}
+    </section>
+  );
+}
+
+/** Hand-off to SOCRadar's own tools for what public sources cannot show. */
+function GoDeeper({ domain }: { domain: string }) {
+  return (
+    <section aria-label="Go deeper with SOCRadar" className="mt-4 print:hidden">
+      <h3 className="text-sm font-semibold text-slate-200">Go deeper with SOCRadar&apos;s free tools</h3>
+      <p className="text-xs text-slate-500">Opens in a new tab. These tools may ask for a quick human check.</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {socradarToolLinks(domain).map((l) => (
+          <a
+            key={l.id}
+            href={l.url}
+            target="_blank"
+            rel="noreferrer"
+            data-tool={l.id}
+            className="rounded-xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-sky-400/40 hover:bg-white/[0.04]"
+          >
+            <span className="text-sm font-medium text-sky-300">{l.label} →</span>
+            <span className="mt-0.5 block text-xs text-slate-400">{l.adds}</span>
+          </a>
+        ))}
+      </div>
     </section>
   );
 }
