@@ -8,7 +8,7 @@ import { emailSecurityCheck } from "@/lib/checks/email-security";
 import { exposedServicesCheck } from "@/lib/checks/exposed-services";
 import { ransomwareCheck } from "@/lib/checks/ransomware";
 import type { CheckOutcome, CheckResult, FollowUp } from "@/lib/checks/types";
-import { ctaHref, reportLink, VENDOR_EMAIL_SOURCE } from "@/lib/config";
+import { ctaHref, reportLink, socradarToolLinks, VENDOR_EMAIL_SOURCE } from "@/lib/config";
 import { collectFollowUps, emailDraft } from "@/lib/questionnaire";
 
 const outcome = (data: Record<string, unknown>): CheckOutcome => ({ status: "fail", score: 0, summary: "", findings: [], data });
@@ -170,6 +170,21 @@ describe("links", () => {
       expect(u.searchParams.get("utm_source")).toBe("vendor-risk-snapshot");
       expect(u.searchParams.get("utm_medium")).toBe("referral");
       expect(u.searchParams.get("utm_campaign")).toBe(campaign);
+    }
+  });
+});
+
+describe("socradarToolLinks", () => {
+  it("hands the vendor domain to SOCRadar's own tools, tagged for attribution", () => {
+    const links = socradarToolLinks("acme.com");
+    expect(links.map((l) => l.id)).toEqual(["dark-web-report", "external-attack-surface"]);
+    for (const l of links) {
+      const u = new URL(l.url);
+      expect(u.origin).toBe("https://socradar.io");
+      expect(u.pathname).toBe(`/free-tools/${l.id}`);
+      expect(u.searchParams.get("domain")).toBe("acme.com");
+      expect(u.searchParams.get("utm_source")).toBe("vendor-risk-snapshot");
+      expect(u.searchParams.get("utm_campaign")).toMatch(/^deep-link-/);
     }
   });
 });

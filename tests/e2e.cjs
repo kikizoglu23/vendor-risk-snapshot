@@ -277,16 +277,9 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
     await page.unroute("**/api/checks/exposed-services?*");
   });
 
-  await test("ransomware finding shows both sources and links to SOCRadar's victim page", async () => {
+  await test("'Go deeper' hands the vendor to SOCRadar's own tools in a new tab", async () => {
     await page.goto(`${APP}/?d=skyplan.com`);
     await waitForResults(page);
-    const card = page.locator("section[aria-live] article").first();
-    assert.match(await card.innerText(), /Seen by 2 independent sources \(ransomware\.live, SOCRadar\)/);
-    const link = card.locator('a:text-is("SOCRadar Ransomware Intelligence →")');
-    assert.match(await link.getAttribute("href"), /^https:\/\/socradar\.io\/free-tools\/ransomware-intelligence\/victims\/skyplan/);
-  });
-
-  await test("'Go deeper' hands the vendor to SOCRadar's protected tools in a new tab", async () => {
     const section = page.locator('section[aria-label="Go deeper with SOCRadar"]');
     assert.ok(await section.isVisible());
     const links = section.locator("a[data-tool]");
@@ -299,7 +292,7 @@ const rowButtons = (page) => page.locator("section[aria-live] button[aria-expand
       assert.equal(u.searchParams.get("utm_source"), "vendor-risk-snapshot");
       assert.equal(await a.getAttribute("target"), "_blank");
     }
-    await page.screenshot({ path: path.join(OUT, "08-two-sources-go-deeper.png"), fullPage: true });
+    await page.screenshot({ path: path.join(OUT, "08-go-deeper.png"), fullPage: true });
   });
 
   await test("a vendor with nothing to clarify gets a 'no questions' message, not an empty list", async () => {

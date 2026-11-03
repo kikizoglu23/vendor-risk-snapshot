@@ -94,8 +94,8 @@ describe("listings that name several organisations (supplier / partner incidents
     expect(toListing({ victim: "x.com, linkedin.com/company/x", domain: "" }, "linkedin.com", "linkedin")).toBeNull();
   });
 
-  it("flags another organisation named in a SOCRadar record (company differs from the domain)", () => {
-    const l = toListing({ victim: "verveba.com", domain: "att.com", group: "INC Ransom" }, "att.com", "att", "SOCRadar");
+  it("flags another organisation named when the record's domain is the vendor's but the name is not", () => {
+    const l = toListing({ victim: "verveba.com", domain: "att.com", group: "incransom" }, "att.com", "att");
     expect(l).toMatchObject({ match: "confirmed", alsoNamed: ["verveba.com"] });
   });
 
